@@ -18,8 +18,15 @@ type Config struct {
 
 // ServerConfig contient les paramètres du serveur web
 type ServerConfig struct {
-	Port    int    `mapstructure:"port"`     // Port d'écoute du serveur (ex: 8080)
-	BaseURL string `mapstructure:"base_url"` // URL de base pour la génération des URLs courtes complètes
+	Port      int             `mapstructure:"port"`       // Port d'écoute du serveur (ex: 8080)
+	BaseURL   string          `mapstructure:"base_url"`   // URL de base pour la génération des URLs courtes complètes
+	RateLimit RateLimitConfig `mapstructure:"rate_limit"` // Paramètres de limitation de débit
+}
+
+// RateLimitConfig définit les paramètres de limitation de débit côté serveur.
+type RateLimitConfig struct {
+	Requests      int `mapstructure:"requests"`       // Nombre d'appels autorisés
+	WindowSeconds int `mapstructure:"window_seconds"` // Fenêtre glissante en secondes
 }
 
 // DatabaseConfig contient les paramètres de connexion à la base de données
@@ -43,10 +50,10 @@ type MonitorConfig struct {
 func LoadConfig() (*Config, error) {
 	// Spécifie le chemin où Viper doit chercher les fichiers de config
 	viper.AddConfigPath("./configs")
-	
+
 	// Spécifie le nom du fichier de config (sans l'extension)
 	viper.SetConfigName("config")
-	
+
 	// Spécifie le type de fichier de config
 	viper.SetConfigType("yaml")
 
@@ -56,6 +63,8 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("database.name", "url_shortener.db")
 	viper.SetDefault("analytics.buffer_size", 100)
 	viper.SetDefault("monitor.interval_minutes", 5)
+	viper.SetDefault("server.rate_limit.requests", 10)
+	viper.SetDefault("server.rate_limit.window_seconds", 60)
 
 	// Lit le fichier de configuration (ignore l'erreur si le fichier n'existe pas, les valeurs par défaut seront utilisées)
 	if err := viper.ReadInConfig(); err != nil {
