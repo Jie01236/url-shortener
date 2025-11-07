@@ -12,6 +12,7 @@ import (
 
 	cmd2 "github.com/Quanghng/url-shortener/cmd"
 	"github.com/Quanghng/url-shortener/internal/api"
+	"github.com/Quanghng/url-shortener/internal/middleware"
 	"github.com/Quanghng/url-shortener/internal/models"
 	"github.com/Quanghng/url-shortener/internal/monitor"
 	"github.com/Quanghng/url-shortener/internal/repository"
@@ -63,7 +64,7 @@ puis lance le serveur HTTP.`,
 
 		// Initialiser le channel ClickEventsChannel avec la taille du buffer configurée
 		api.ClickEventsChannel = make(chan models.ClickEvent, cfg.Analytics.BufferSize)
-		
+
 		// Lancer les workers pour traiter les événements de clic
 		numWorkers := 3
 		workers.StartClickWorkers(numWorkers, api.ClickEventsChannel, clickRepo)
@@ -82,6 +83,15 @@ puis lance le serveur HTTP.`,
 
 		// Configurer le routeur Gin et les handlers API (pas besoin de passer bufferSize maintenant)
 		router := gin.Default()
+		if cfg.Server.RateLimit.Requests > 0 && cfg.Server.RateLimit.WindowSeconds > 0 {
+			limiter := middleware.NewRateLimiter(
+				cfg.Server.RateLimit.Requests,
+				time.Duration(cfg.Server.RateLimit.WindowSeconds)*time.Second,
+			)
+			router.Use(limiter.Middleware())
+			log.Printf("Rate limiting activé: %d requêtes / %d seconde(s).",
+				cfg.Server.RateLimit.Requests, cfg.Server.RateLimit.WindowSeconds)
+		}
 		api.SetupRoutes(router, linkService)
 
 		// Pas toucher au log
