@@ -54,15 +54,28 @@ func (m *UrlMonitor) checkUrls() {
 		return
 	}
 
-	for _, link := range links {
+	for i := range links {
+		link := &links[i]
 		// Pour chaque lien, vérifie son accessibilité
 		currentState := m.isUrlAccessible(link.LongURL)
 
 		// Protéger l'accès à la map 'knownStates' car 'checkUrls' peut être exécuté concurremment
 		m.mu.Lock()
 		previousState, exists := m.knownStates[link.ID] // Récupère l'état précédent
-		m.knownStates[link.ID] = currentState           // Met à jour l'état actuel
+		if !exists {
+			previousState = link.IsActive // Utilise l'état de la DB si c'est la première vérification après redémarrage
+		}
+		m.knownStates[link.ID] = currentState // Met à jour l'état actuel
 		m.mu.Unlock()
+
+		// Synchronise l'état en base si nécessaire
+		if currentState != link.IsActive {
+			link.IsActive = currentState
+			if err := m.linkRepo.UpdateLink(link); err != nil {
+				log.Printf("[MONITOR] ERREUR lors de la mise à jour de l'état du lien %s (%s) : %v",
+					link.ShortCode, link.LongURL, err)
+			}
+		}
 
 		// Si c'est la première vérification pour ce lien, on initialise l'état sans notifier.
 		if !exists {
@@ -94,7 +107,7 @@ func (m *UrlMonitor) isUrlAccessible(url string) bool {
 		log.Printf("[MONITOR] Erreur d'accès à l'URL '%s': %v", url, err)
 		return false
 	}
-	
+
 	// Ferme le corps de la réponse pour libérer les ressources
 	defer resp.Body.Close()
 
