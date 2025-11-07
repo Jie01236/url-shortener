@@ -3,8 +3,12 @@ package cmd
 import (
 	"log"
 
+<<<<<<< HEAD
 	"github.com/axellelanca/urlshortener/internal/config"
 	"github.com/spf13/cobra"
+=======
+	"github.com/Quanghng/url-shortener/internal/config"
+>>>>>>> 45cfe642b207426e144b1e381838a64ed43d2f37
 )
 
 // cfg est la variable globale qui contiendra la configuration chargée.

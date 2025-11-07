@@ -1,8 +1,10 @@
 package services
 
 import (
-	"github.com/axellelanca/urlshortener/internal/models"
-	"github.com/axellelanca/urlshortener/internal/repository" // Importe le package repository
+	"fmt"
+
+	"github.com/Quanghng/url-shortener/internal/models"
+	"github.com/Quanghng/url-shortener/internal/repository" // Importe le package repository
 )
 
 // ClickService est une structure qui fournit des méthodes pour la logique métier des clics.
